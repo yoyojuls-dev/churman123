@@ -23,6 +23,9 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
+
+
+
 --
 -- Table structure for table `accounts`
 --
@@ -627,3 +630,161 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+
+-- Add baptismal_certificates table to track certificate generation and validation
+CREATE TABLE IF NOT EXISTS `baptismal_certificates` (
+  `certificate_id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` varchar(10) NOT NULL,
+  `certificate_number` varchar(50) NOT NULL,
+  `baptism_date` date NOT NULL,
+  `baptized_by` varchar(100) NOT NULL,
+  `witnesses` text,
+  `church_location` varchar(200) DEFAULT 'Parish Church',
+  `generated_date` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `generated_by` varchar(100) NOT NULL,
+  `validated_by_priest` tinyint(1) DEFAULT 0,
+  `validated_by_staff` tinyint(1) DEFAULT 0,
+  `priest_signature` varchar(100) DEFAULT NULL,
+  `staff_signature` varchar(100) DEFAULT NULL,
+  `validation_date` timestamp NULL DEFAULT NULL,
+  `status` enum('draft','validated','printed') DEFAULT 'draft',
+  `notes` text,
+  PRIMARY KEY (`certificate_id`),
+  UNIQUE KEY `certificate_number` (`certificate_number`),
+  KEY `member_id` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- Insert sample data for testing
+INSERT INTO `baptismal_certificates` (`member_id`, `certificate_number`, `baptism_date`, `baptized_by`, `witnesses`, `generated_by`, `validated_by_priest`, `validated_by_staff`, `status`) VALUES
+('0725873436', 'BC-2024-001', '2024-01-15', 'Fr. John Smith', 'Maria Santos, Jose Rodriguez', 'Admin', 1, 1, 'validated'),
+('0720571204', 'BC-2024-002', '2024-02-20', 'Fr. John Smith', 'Ana Cruz, Pedro Garcia', 'Admin', 0, 1, 'draft'),
+('0723437369', 'BC-2024-003', '2024-03-10', 'Fr. John Smith', 'Carmen Lopez, Miguel Torres', 'Admin', 1, 0, 'draft');
+
+
+
+-- Marriage Certificate Table
+CREATE TABLE `marriage_certificates` (
+  `marriage_id` int(11) NOT NULL AUTO_INCREMENT,
+  `groom_name` varchar(255) NOT NULL,
+  `groom_mobile` varchar(20) DEFAULT NULL,
+  `groom_address` varchar(500) DEFAULT NULL,
+  `bride_name` varchar(255) NOT NULL,
+  `bride_mobile` varchar(20) DEFAULT NULL,
+  `bride_address` varchar(500) DEFAULT NULL,
+  `marriage_date` date NOT NULL,
+  `marriage_venue` varchar(255) DEFAULT NULL,
+  `officiant_name` varchar(255) DEFAULT NULL,
+  `certificate_number` varchar(100) DEFAULT NULL,
+  `proof_document` varchar(500) DEFAULT NULL, -- Path to uploaded marriage certificate proof
+  `status` enum('pending','approved','issued','rejected') DEFAULT 'pending',
+  `notes` text DEFAULT NULL,
+  `created_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_date` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_by` varchar(100) DEFAULT NULL, -- Admin username who created the record
+  PRIMARY KEY (`marriage_id`),
+  UNIQUE KEY `certificate_number` (`certificate_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+-- Optional: Marriage Applications Table (for pending requests)
+CREATE TABLE `marriage_applications` (
+  `application_id` int(11) NOT NULL AUTO_INCREMENT,
+  `groom_name` varchar(255) NOT NULL,
+  `groom_mobile` varchar(20) NOT NULL,
+  `groom_email` varchar(255) DEFAULT NULL,
+  `groom_address` varchar(500) NOT NULL,
+  `bride_name` varchar(255) NOT NULL,
+  `bride_mobile` varchar(20) NOT NULL,
+  `bride_email` varchar(255) DEFAULT NULL,
+  `bride_address` varchar(500) NOT NULL,
+  `preferred_date` date NOT NULL,
+  `preferred_venue` varchar(255) DEFAULT NULL,
+  `proof_document` varchar(500) DEFAULT NULL, -- Path to uploaded documents
+  `status` enum('pending','approved','scheduled','completed','rejected') DEFAULT 'pending',
+  `application_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `notes` text DEFAULT NULL,
+  PRIMARY KEY (`application_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+-- Insert sample data
+INSERT INTO `marriage_certificates` (
+  `groom_name`, `groom_mobile`, `groom_address`,
+  `bride_name`, `bride_mobile`, `bride_address`,
+  `marriage_date`, `marriage_venue`, `officiant_name`,
+  `certificate_number`, `status`, `created_by`
+) VALUES 
+(
+  'John Doe', '09123456789', 'Caloocan City',
+  'Jane Smith', '09987654321', 'Quezon City',
+  '2024-12-25', 'Parish Church', 'Father Rodriguez',
+  'MC-2024-001', 'issued', 'Admin'
+);
+
+-- Add indexes for better performance
+CREATE INDEX idx_marriage_date ON marriage_certificates(marriage_date);
+CREATE INDEX idx_groom_mobile ON marriage_certificates(groom_mobile);
+CREATE INDEX idx_bride_mobile ON marriage_certificates(bride_mobile);
+CREATE INDEX idx_status ON marriage_certificates(status);
+
+
+-- Dedication Certificate Database Schema
+-- Simple schema to add dedication certificate functionality to existing Parish Management System
+
+-- Main dedication table
+CREATE TABLE `dedication` (
+  `dedication_id` int(11) NOT NULL AUTO_INCREMENT,
+  `child_fname` varchar(100) NOT NULL,
+  `child_mname` varchar(100) DEFAULT NULL,
+  `child_lname` varchar(100) NOT NULL,
+  `child_gender` varchar(10) NOT NULL,
+  `child_birthdate` date NOT NULL,
+  `child_birthplace` varchar(100) NOT NULL,
+  `father_name` varchar(200) NOT NULL,
+  `mother_name` varchar(200) NOT NULL,
+  `parents_address` varchar(255) NOT NULL,
+  `parents_mobile` varchar(20) NOT NULL,
+  `dedication_date` date NOT NULL,
+  `officiant` varchar(100) NOT NULL,
+  `certificate_number` varchar(50) NOT NULL UNIQUE,
+  `remarks` text DEFAULT NULL,
+  `member_id` varchar(10) DEFAULT NULL, -- Links to existing members table
+  `created_by` int(11) NOT NULL, -- Links to admin table
+  `created_date` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `status` varchar(20) DEFAULT 'Active',
+  PRIMARY KEY (`dedication_id`),
+  INDEX `idx_member_id` (`member_id`),
+  INDEX `idx_created_by` (`created_by`),
+  INDEX `idx_dedication_date` (`dedication_date`),
+  INDEX `idx_certificate_number` (`certificate_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- Sample data for testing
+INSERT INTO `dedication` (
+  `child_fname`, `child_mname`, `child_lname`, `child_gender`, 
+  `child_birthdate`, `child_birthplace`, `father_name`, `mother_name`,
+  `parents_address`, `parents_mobile`, `dedication_date`, `officiant`,
+  `certificate_number`, `member_id`, `created_by`
+) VALUES 
+(
+  'Maria', 'Santos', 'Cruz', 'Female',
+  '2024-01-15', 'Caloocan City', 'Juan Santos Cruz', 'Ana Maria Cruz',
+  'Phase 1, Caloocan City', '09123456789', '2024-12-15', 'Fr. Joseph Martinez',
+  'DED-2024-001', '0912345678', 1
+),
+(
+  'Gabriel', 'Reyes', 'Flores', 'Male',
+  '2024-03-20', 'Manila City', 'Carlos Reyes Flores', 'Elena Santos Flores',
+  'Quezon City', '09234567890', '2024-12-22', 'Fr. Joseph Martinez',
+  'DED-2024-002', '0923456789', 1
+);
+
+-- Add foreign key constraints (optional, depending on your existing setup)
+-- ALTER TABLE `dedication` 
+-- ADD CONSTRAINT `fk_dedication_member` 
+-- FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON DELETE SET NULL;
+
+-- ALTER TABLE `dedication` 
+-- ADD CONSTRAINT `fk_dedication_admin` 
+-- FOREIGN KEY (`created_by`) REFERENCES `admin`(`admin_id`) ON DELETE RESTRICT;
+
